@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Klim - Чат</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0c0e;
+            display: flex;
+            justify-content: center;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            background: #0f1214;
+            min-height: 100vh;
+            border-left: 1px solid #1e2428;
+            border-right: 1px solid #1e2428;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            padding: 12px 16px;
+            background: #1e2428;
+            display: flex;
+            align-items: center;
+            color: white;
+            border-bottom: 1px solid #2b3338;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .back-btn {
+            font-size: 24px;
+            margin-right: 16px;
+            cursor: pointer;
+            color: #50a2e9;
+            text-decoration: none;
+        }
+        .chat-info {
+            flex: 1;
+        }
+        .chat-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .online-status {
+            font-size: 13px;
+            color: #8e9aa3;
+        }
+        .online-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #5cb85c;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .messages {
+            flex: 1;
+            padding: 20px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .message {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            font-size: 16px;
+            line-height: 1.4;
+            margin-bottom: 2px;
+        }
+        .message.mine {
+            align-self: flex-end;
+            background: #2b4f6e;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.other {
+            align-self: flex-start;
+            background: #1e2428;
+            color: white;
+            border-bottom-left-radius: 4px;
+        }
+        .message-time {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+            text-align: right;
+        }
+        .input-area {
+            padding: 16px;
+            background: #1e2428;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border-top: 1px solid #2b3338;
+        }
+        #message-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: #2b3338;
+            border: 1px solid #3a444b;
+            border-radius: 24px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+        #message-input:focus {
+            border-color: #50a2e9;
+        }
+        .send-btn {
+            background: #50a2e9;
+            color: white;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+        }
+    </style>
+    <script type="module">
+        import { auth, db } from './firebase.js';
+        import { 
+            ref, onValue, set, push, serverTimestamp, onChildAdded, query, orderByChild, limitToLast
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatId = urlParams.get('chatId');
+        let currentUser = null;
+        let otherUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && chatId) {
+                currentUser = user;
+                loadChatInfo(chatId);
+                setupMessages(chatId);
+                setupOnlineStatus(user.uid);
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function loadChatInfo(chatId) {
+            const chatRef = ref(db, `chats/${chatId}`);
+            onValue(chatRef, async (snapshot) => {
+                const chat = snapshot.val();
+                if (!chat) {
+                    window.location.href = 'chats.html';
+                    return;
+                }
+                
+                const otherUid = Object.keys(chat.users).find(uid => uid !== currentUser.uid);
+                
+                const userRef = ref(db, `users/${otherUid}`);
+                onValue(userRef, (userSnap) => {
+                    otherUser = userSnap.val();
+                    document.getElementById('chat-name').textContent = otherUser?.name || otherUser?.email;
+                    
+                    if (otherUser?.online) {
+                        document.getElementById('online-status').innerHTML = 
+                            '<span class="online-dot"></span>в сети';
+                    } else if (otherUser?.lastSeen) {
+                        const lastSeen = new Date(otherUser.lastSeen);
+                        document.getElementById('online-status').innerHTML = 
+                            `был(а) ${formatLastSeen(lastSeen)}`;
+                    }
+                });
+            });
+        }
+
+        function formatLastSeen(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 60) return 'только что';
+            if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
+            return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        }
+
+        function setupMessages(chatId) {
+            const messagesRef = ref(db, `messages/${chatId}`);
+            const messagesQuery = query(messagesRef, orderByChild('timestamp'), limitToLast(50));
+            
+            onChildAdded(messagesQuery, (snapshot) => {
+                const msg = snapshot.val();
+                appendMessage(msg);
+            });
+        }
+
+        function appendMessage(msg) {
+            const container = document.getElementById('messages-container');
+            const isMine = msg.senderId === currentUser.uid;
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isMine ? 'mine' : 'other'}`;
+            
+            const textDiv = document.createElement('div');
+            textDiv.textContent = msg.text;
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            const date = msg.timestamp ? new Date(msg.timestamp) : new Date();
+            timeDiv.textContent = date.toLocaleTimeString('ru-RU', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            msgDiv.appendChild(textDiv);
+            msgDiv.appendChild(timeDiv);
+            container.appendChild(msgDiv);
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const newMsgRef = push(ref(db, `messages/${chatId}`));
+            const messageData = {
+                text: text,
+                senderId: currentUser.uid,
+                timestamp: serverTimestamp()
+            };
+            
+            await set(newMsgRef, messageData);
+            
+            await set(ref(db, `chats/${chatId}/lastMessage`), {
+                ...messageData,
+                timestamp: serverTimestamp()
+            });
+            
+            input.value = '';
+        };
+
+        window.handleKeyPress = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                window.sendMessage();
+            }
+        };
+
+        function setupOnlineStatus(uid) {
+            set(ref(db, `users/${uid}/online`), true);
+            set(ref(db, `users/${uid}/lastSeen`), serverTimestamp());
+            
+            window.addEventListener('beforeunload', () => {
+                set(ref(db, `users/${uid}/online`), false);
+                set(ref(db, `users/${uid}/lastSeen`), serverTimestamp());
+            });
+        }
+
+        window.goBack = () => {
+            window.location.href = 'chats.html';
+        };
+    </script>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <a class="back-btn" onclick="goBack()">←</a>
+            <div class="chat-info">
+                <div class="chat-name" id="chat-name">Загрузка...</div>
+                <div class="online-status" id="online-status"></div>
+            </div>
+        </div>
+        
+        <div id="messages-container" class="messages"></div>
+        
+        <div class="input-area">
+            <input 
+                type="text" 
+                id="message-input" 
+                placeholder="Сообщение"
+                onkeypress="handleKeyPress(event)"
+                autofocus
+            >
+            <button class="send-btn" onclick="sendMessage()">→</button>
+        </div>
+    </div>
+</body>
+</html>
