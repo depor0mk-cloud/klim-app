@@ -60,7 +60,8 @@
         .switch a { color: #50a2e9; text-decoration: none; cursor: pointer; }
     </style>
     <script type="module">
-        import { auth, db } from './firebase.js';
+        // ⚠️ ИСПРАВЛЕНО ДЛЯ GITHUB PAGES
+        import { auth, db } from '/klim-app/firebase.js';
         import { 
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword 
@@ -89,7 +90,7 @@
                     createdAt: serverTimestamp()
                 });
                 
-                window.location.href = 'chats.html';
+                window.location.href = '/klim-app/chats.html';
             } catch (e) {
                 alert('Ошибка: ' + e.message);
             }
@@ -101,7 +102,7 @@
             
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                window.location.href = 'chats.html';
+                window.location.href = '/klim-app/chats.html';
             } catch (e) {
                 alert('Неверный email или пароль');
             }
