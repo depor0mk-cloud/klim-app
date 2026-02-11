@@ -111,7 +111,8 @@
         }
     </style>
     <script type="module">
-        import { auth, db } from './firebase.js';
+        // ⚠️ ИСПРАВЛЕНО ДЛЯ GITHUB PAGES
+        import { auth, db } from '/klim-app/firebase.js';
         import { 
             ref, onValue, set, push, serverTimestamp, get 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -128,7 +129,7 @@
                 loadAllUsers();
                 setupOnlineStatus(user.uid);
             } else {
-                window.location.href = 'index.html';
+                window.location.href = '/klim-app/index.html';
             }
         });
 
@@ -138,7 +139,7 @@
                 await set(ref(db, `users/${currentUser.uid}/lastSeen`), serverTimestamp());
             }
             await signOut(auth);
-            window.location.href = 'index.html';
+            window.location.href = '/klim-app/index.html';
         };
 
         function loadAllUsers() {
@@ -194,7 +195,7 @@
             const container = document.getElementById('chats-list');
             const chatElement = document.createElement('div');
             chatElement.className = 'chat-item';
-            chatElement.onclick = () => window.location.href = `chat.html?chatId=${chat.id}`;
+            chatElement.onclick = () => window.location.href = `/klim-app/chat.html?chatId=${chat.id}`;
             
             const avatar = document.createElement('div');
             avatar.className = 'avatar';
@@ -297,7 +298,7 @@
             });
             
             if (existingChat) {
-                window.location.href = `chat.html?chatId=${existingChat}`;
+                window.location.href = `/klim-app/chat.html?chatId=${existingChat}`;
                 return;
             }
             
@@ -311,7 +312,7 @@
                 lastMessage: null
             });
             
-            window.location.href = `chat.html?chatId=${newChatRef.key}`;
+            window.location.href = `/klim-app/chat.html?chatId=${newChatRef.key}`;
         };
     </script>
 </head>
@@ -334,4 +335,4 @@
         </div>
     </div>
 </body>
-</html>
+    </html>
