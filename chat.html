@@ -131,7 +131,8 @@
         }
     </style>
     <script type="module">
-        import { auth, db } from './firebase.js';
+        // ⚠️ ИСПРАВЛЕНО ДЛЯ GITHUB PAGES
+        import { auth, db } from '/klim-app/firebase.js';
         import { 
             ref, onValue, set, push, serverTimestamp, onChildAdded, query, orderByChild, limitToLast
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -149,7 +150,7 @@
                 setupMessages(chatId);
                 setupOnlineStatus(user.uid);
             } else {
-                window.location.href = 'index.html';
+                window.location.href = '/klim-app/index.html';
             }
         });
 
@@ -158,7 +159,7 @@
             onValue(chatRef, async (snapshot) => {
                 const chat = snapshot.val();
                 if (!chat) {
-                    window.location.href = 'chats.html';
+                    window.location.href = '/klim-app/chats.html';
                     return;
                 }
                 
@@ -266,7 +267,7 @@
         }
 
         window.goBack = () => {
-            window.location.href = 'chats.html';
+            window.location.href = '/klim-app/chats.html';
         };
     </script>
 </head>
