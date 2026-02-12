@@ -29,28 +29,16 @@
             align-items: center;
             color: white;
             border-bottom: 1px solid #2b3338;
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
         .back-btn {
             font-size: 24px;
             margin-right: 16px;
             cursor: pointer;
             color: #50a2e9;
-            text-decoration: none;
         }
-        .chat-info {
-            flex: 1;
-        }
-        .chat-name {
-            font-size: 18px;
-            font-weight: 600;
-        }
-        .online-status {
-            font-size: 13px;
-            color: #8e9aa3;
-        }
+        .chat-info { flex: 1; }
+        .chat-name { font-size: 18px; font-weight: 600; }
+        .online-status { font-size: 13px; color: #8e9aa3; }
         .online-dot {
             display: inline-block;
             width: 8px;
@@ -71,11 +59,8 @@
             max-width: 75%;
             padding: 10px 14px;
             border-radius: 18px;
-            position: relative;
             word-wrap: break-word;
             font-size: 16px;
-            line-height: 1.4;
-            margin-bottom: 2px;
         }
         .message.mine {
             align-self: flex-end;
@@ -113,9 +98,6 @@
             font-size: 16px;
             outline: none;
         }
-        #message-input:focus {
-            border-color: #50a2e9;
-        }
         .send-btn {
             background: #50a2e9;
             color: white;
@@ -131,11 +113,9 @@
         }
     </style>
     <script type="module">
-        // ⚠️ ИСПРАВЛЕНО ДЛЯ GITHUB PAGES
-        import { auth, db } from '/klim-app/firebase.js';
-        import { 
-            ref, onValue, set, push, serverTimestamp, onChildAdded, query, orderByChild, limitToLast
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { auth, db } from './firebase.js';
+        import { ref, onValue, set, push, serverTimestamp, onChildAdded, query, orderByChild, limitToLast } 
+            from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -150,7 +130,7 @@
                 setupMessages(chatId);
                 setupOnlineStatus(user.uid);
             } else {
-                window.location.href = '/klim-app/index.html';
+                window.location.href = 'index.html';
             }
         });
 
@@ -158,25 +138,19 @@
             const chatRef = ref(db, `chats/${chatId}`);
             onValue(chatRef, async (snapshot) => {
                 const chat = snapshot.val();
-                if (!chat) {
-                    window.location.href = '/klim-app/chats.html';
-                    return;
-                }
+                if (!chat) { window.location.href = 'chats.html'; return; }
                 
                 const otherUid = Object.keys(chat.users).find(uid => uid !== currentUser.uid);
-                
                 const userRef = ref(db, `users/${otherUid}`);
                 onValue(userRef, (userSnap) => {
                     otherUser = userSnap.val();
                     document.getElementById('chat-name').textContent = otherUser?.name || otherUser?.email;
                     
                     if (otherUser?.online) {
-                        document.getElementById('online-status').innerHTML = 
-                            '<span class="online-dot"></span>в сети';
+                        document.getElementById('online-status').innerHTML = '<span class="online-dot"></span>в сети';
                     } else if (otherUser?.lastSeen) {
                         const lastSeen = new Date(otherUser.lastSeen);
-                        document.getElementById('online-status').innerHTML = 
-                            `был(а) ${formatLastSeen(lastSeen)}`;
+                        document.getElementById('online-status').innerHTML = `был(а) ${formatLastSeen(lastSeen)}`;
                     }
                 });
             });
@@ -185,7 +159,6 @@
         function formatLastSeen(date) {
             const now = new Date();
             const diff = Math.floor((now - date) / 1000);
-            
             if (diff < 60) return 'только что';
             if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
             if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
@@ -195,7 +168,6 @@
         function setupMessages(chatId) {
             const messagesRef = ref(db, `messages/${chatId}`);
             const messagesQuery = query(messagesRef, orderByChild('timestamp'), limitToLast(50));
-            
             onChildAdded(messagesQuery, (snapshot) => {
                 const msg = snapshot.val();
                 appendMessage(msg);
@@ -215,15 +187,11 @@
             const timeDiv = document.createElement('div');
             timeDiv.className = 'message-time';
             const date = msg.timestamp ? new Date(msg.timestamp) : new Date();
-            timeDiv.textContent = date.toLocaleTimeString('ru-RU', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
+            timeDiv.textContent = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
             
             msgDiv.appendChild(textDiv);
             msgDiv.appendChild(timeDiv);
             container.appendChild(msgDiv);
-            
             container.scrollTop = container.scrollHeight;
         }
 
@@ -233,18 +201,10 @@
             if (!text) return;
             
             const newMsgRef = push(ref(db, `messages/${chatId}`));
-            const messageData = {
-                text: text,
-                senderId: currentUser.uid,
-                timestamp: serverTimestamp()
-            };
+            const messageData = { text, senderId: currentUser.uid, timestamp: serverTimestamp() };
             
             await set(newMsgRef, messageData);
-            
-            await set(ref(db, `chats/${chatId}/lastMessage`), {
-                ...messageData,
-                timestamp: serverTimestamp()
-            });
+            await set(ref(db, `chats/${chatId}/lastMessage`), { ...messageData, timestamp: serverTimestamp() });
             
             input.value = '';
         };
@@ -259,16 +219,13 @@
         function setupOnlineStatus(uid) {
             set(ref(db, `users/${uid}/online`), true);
             set(ref(db, `users/${uid}/lastSeen`), serverTimestamp());
-            
             window.addEventListener('beforeunload', () => {
                 set(ref(db, `users/${uid}/online`), false);
                 set(ref(db, `users/${uid}/lastSeen`), serverTimestamp());
             });
         }
 
-        window.goBack = () => {
-            window.location.href = '/klim-app/chats.html';
-        };
+        window.goBack = () => { window.location.href = 'chats.html'; };
     </script>
 </head>
 <body>
@@ -280,17 +237,9 @@
                 <div class="online-status" id="online-status"></div>
             </div>
         </div>
-        
         <div id="messages-container" class="messages"></div>
-        
         <div class="input-area">
-            <input 
-                type="text" 
-                id="message-input" 
-                placeholder="Сообщение"
-                onkeypress="handleKeyPress(event)"
-                autofocus
-            >
+            <input type="text" id="message-input" placeholder="Сообщение" onkeypress="handleKeyPress(event)" autofocus>
             <button class="send-btn" onclick="sendMessage()">→</button>
         </div>
     </div>
