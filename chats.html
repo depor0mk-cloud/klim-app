@@ -28,14 +28,8 @@
             align-items: center;
             color: white;
             border-bottom: 1px solid #2b3338;
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
-        .header h1 {
-            font-size: 22px;
-            font-weight: 600;
-        }
+        .header h1 { font-size: 22px; font-weight: 600; }
         .new-chat-btn {
             background: #50a2e9;
             color: white;
@@ -45,23 +39,15 @@
             border-radius: 50%;
             font-size: 24px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
-        .chats-list {
-            padding: 0;
-        }
+        .chats-list { padding: 0; }
         .chat-item {
             display: flex;
             padding: 16px;
             border-bottom: 1px solid #1e2428;
             cursor: pointer;
-            transition: background 0.2s;
         }
-        .chat-item:hover {
-            background: #1e2428;
-        }
+        .chat-item:hover { background: #1e2428; }
         .avatar {
             width: 54px;
             height: 54px;
@@ -74,48 +60,17 @@
             color: white;
             font-size: 20px;
             font-weight: 500;
-            flex-shrink: 0;
         }
-        .chat-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .chat-name {
-            color: white;
-            font-size: 17px;
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-        .last-message {
-            color: #8e9aa3;
-            font-size: 15px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .time {
-            color: #6e7a84;
-            font-size: 13px;
-        }
-        .logout {
-            color: #e95a5a;
-            margin-left: 16px;
-            cursor: pointer;
-            font-size: 20px;
-        }
-        .user-email {
-            color: #8e9aa3;
-            font-size: 14px;
-            margin-right: 12px;
-        }
+        .chat-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .chat-name { color: white; font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+        .last-message { color: #8e9aa3; font-size: 15px; display: flex; justify-content: space-between; }
+        .time { color: #6e7a84; font-size: 13px; }
+        .logout { color: #e95a5a; margin-left: 16px; cursor: pointer; font-size: 20px; }
+        .user-email { color: #8e9aa3; font-size: 14px; margin-right: 12px; }
     </style>
     <script type="module">
-        // ⚠️ ИСПРАВЛЕНО ДЛЯ GITHUB PAGES
-        import { auth, db } from '/klim-app/firebase.js';
-        import { 
-            ref, onValue, set, push, serverTimestamp, get 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { auth, db } from './firebase.js';
+        import { ref, onValue, set, push, serverTimestamp, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         let currentUser = null;
@@ -129,7 +84,7 @@
                 loadAllUsers();
                 setupOnlineStatus(user.uid);
             } else {
-                window.location.href = '/klim-app/index.html';
+                window.location.href = 'index.html';
             }
         });
 
@@ -139,7 +94,7 @@
                 await set(ref(db, `users/${currentUser.uid}/lastSeen`), serverTimestamp());
             }
             await signOut(auth);
-            window.location.href = '/klim-app/index.html';
+            window.location.href = 'index.html';
         };
 
         function loadAllUsers() {
@@ -164,20 +119,12 @@
                     if (chat.users && chat.users[myUid]) {
                         const otherUid = Object.keys(chat.users).find(uid => uid !== myUid);
                         if (otherUid) {
-                            chats.push({
-                                id: chatSnapshot.key,
-                                ...chat,
-                                otherUid
-                            });
+                            chats.push({ id: chatSnapshot.key, ...chat, otherUid });
                         }
                     }
                 });
                 
-                chats.sort((a, b) => {
-                    const timeA = a.lastMessage?.timestamp || 0;
-                    const timeB = b.lastMessage?.timestamp || 0;
-                    return timeB - timeA;
-                });
+                chats.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0));
                 
                 if (chats.length === 0) {
                     document.getElementById('empty-state').style.display = 'block';
@@ -195,7 +142,7 @@
             const container = document.getElementById('chats-list');
             const chatElement = document.createElement('div');
             chatElement.className = 'chat-item';
-            chatElement.onclick = () => window.location.href = `/klim-app/chat.html?chatId=${chat.id}`;
+            chatElement.onclick = () => window.location.href = `chat.html?chatId=${chat.id}`;
             
             const avatar = document.createElement('div');
             avatar.className = 'avatar';
@@ -228,13 +175,10 @@
             
             lastMsgDiv.appendChild(lastMsgText);
             lastMsgDiv.appendChild(timeSpan);
-            
             chatInfo.appendChild(nameDiv);
             chatInfo.appendChild(lastMsgDiv);
-            
             chatElement.appendChild(avatar);
             chatElement.appendChild(chatInfo);
-            
             container.appendChild(chatElement);
         }
 
@@ -247,15 +191,11 @@
         }
 
         function setupOnlineStatus(uid) {
-            const statusRef = ref(db, `users/${uid}/online`);
-            const lastSeenRef = ref(db, `users/${uid}/lastSeen`);
-            
-            set(statusRef, true);
-            set(lastSeenRef, serverTimestamp());
-            
+            set(ref(db, `users/${uid}/online`), true);
+            set(ref(db, `users/${uid}/lastSeen`), serverTimestamp());
             window.addEventListener('beforeunload', () => {
-                set(statusRef, false);
-                set(lastSeenRef, serverTimestamp());
+                set(ref(db, `users/${uid}/online`), false);
+                set(ref(db, `users/${uid}/lastSeen`), serverTimestamp());
             });
         }
 
@@ -274,15 +214,8 @@
                 }
             });
             
-            if (!otherUser) {
-                alert('Пользователь не найден');
-                return;
-            }
-            
-            if (otherUser.uid === currentUser.uid) {
-                alert('Нельзя создать чат с самим собой');
-                return;
-            }
+            if (!otherUser) { alert('Пользователь не найден'); return; }
+            if (otherUser.uid === currentUser.uid) { alert('Нельзя создать чат с самим собой'); return; }
             
             const chatsRef = ref(db, 'chats');
             const chatsSnapshot = await get(chatsRef);
@@ -290,29 +223,24 @@
             
             chatsSnapshot.forEach((chatSnapshot) => {
                 const chat = chatSnapshot.val();
-                if (chat.users && 
-                    chat.users[currentUser.uid] && 
-                    chat.users[otherUser.uid]) {
+                if (chat.users && chat.users[currentUser.uid] && chat.users[otherUser.uid]) {
                     existingChat = chatSnapshot.key;
                 }
             });
             
             if (existingChat) {
-                window.location.href = `/klim-app/chat.html?chatId=${existingChat}`;
+                window.location.href = `chat.html?chatId=${existingChat}`;
                 return;
             }
             
             const newChatRef = push(ref(db, 'chats'));
             await set(newChatRef, {
-                users: {
-                    [currentUser.uid]: true,
-                    [otherUser.uid]: true
-                },
+                users: { [currentUser.uid]: true, [otherUser.uid]: true },
                 createdAt: serverTimestamp(),
                 lastMessage: null
             });
             
-            window.location.href = `/klim-app/chat.html?chatId=${newChatRef.key}`;
+            window.location.href = `chat.html?chatId=${newChatRef.key}`;
         };
     </script>
 </head>
@@ -326,13 +254,10 @@
                 <span class="logout" onclick="logout()">⏻</span>
             </div>
         </div>
-        
         <div id="chats-list" class="chats-list"></div>
-        
         <div id="empty-state" style="padding: 30px; text-align: center; color: #6e7a84; display: none;">
-            Нет чатов<br>
-            <small style="color: #8e9aa3;">Нажми + чтобы начать</small>
+            Нет чатов<br><small style="color: #8e9aa3;">Нажми + чтобы начать</small>
         </div>
     </div>
 </body>
-    </html>
+</html>
